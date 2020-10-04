@@ -2,6 +2,7 @@
   <div>
     <ds-space>
       <ds-heading tag="h2">{{ $t('site.termsAc') }}</ds-heading>
+      <small>Version: {{ termsAndConditionsVersion }}</small>
     </ds-space>
     <ds-container>
       <ds-space margin-top="large">
@@ -14,9 +15,15 @@
 
 <script>
 export default {
+  layout: 'blank',
   head() {
     return {
       title: this.$t('site.termsAc'),
+    }
+  },
+  data() {
+    return {
+      termsAndConditionsVersion: '1.0.0',
     }
   },
 }
