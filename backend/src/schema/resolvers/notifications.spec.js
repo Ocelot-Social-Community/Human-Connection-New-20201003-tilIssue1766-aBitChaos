@@ -48,13 +48,15 @@ describe('given some notifications', () => {
       factory.create('Post', { author, id: 'p1', categoryIds, content: 'Not for you' }),
       factory.create('Post', {
         author,
-        id: 'p2',
+        id: 'already-seen-post',
+        title: 'Already seen post title',
         categoryIds,
         content: 'Already seen post mention',
       }),
       factory.create('Post', {
         author,
-        id: 'p3',
+        id: 'have-been-mentioned',
+        title: 'Have been mentioned',
         categoryIds,
         content: 'You have been mentioned in a post',
       }),
@@ -62,51 +64,45 @@ describe('given some notifications', () => {
     const [comment1, comment2, comment3] = await Promise.all([
       factory.create('Comment', {
         author,
-        postId: 'p3',
+        postId: 'have-been-mentioned',
         id: 'c1',
         content: 'You have seen this comment mentioning already',
       }),
       factory.create('Comment', {
         author,
-        postId: 'p3',
+        postId: 'have-been-mentioned',
         id: 'c2',
         content: 'You have been mentioned in a comment',
       }),
       factory.create('Comment', {
         author,
-        postId: 'p3',
+        postId: 'have-been-mentioned',
         id: 'c3',
         content: 'Somebody else was mentioned in a comment',
       }),
     ])
     await Promise.all([
       post1.relateTo(neighbor, 'notified', {
-        createdAt: '2019-08-29T17:33:48.651Z',
         read: false,
         reason: 'mentioned_in_post',
       }),
       post2.relateTo(user, 'notified', {
-        createdAt: '2019-08-30T17:33:48.651Z',
         read: true,
         reason: 'mentioned_in_post',
       }),
       post3.relateTo(user, 'notified', {
-        createdAt: '2019-08-31T17:33:48.651Z',
         read: false,
         reason: 'mentioned_in_post',
       }),
       comment1.relateTo(user, 'notified', {
-        createdAt: '2019-08-30T15:33:48.651Z',
         read: true,
         reason: 'mentioned_in_comment',
       }),
       comment2.relateTo(user, 'notified', {
-        createdAt: '2019-08-30T19:33:48.651Z',
         read: false,
         reason: 'mentioned_in_comment',
       }),
       comment3.relateTo(neighbor, 'notified', {
-        createdAt: '2019-09-01T17:33:48.651Z',
         read: false,
         reason: 'mentioned_in_comment',
       }),
@@ -120,6 +116,7 @@ describe('given some notifications', () => {
           from {
             __typename
             ... on Post {
+              title
               content
             }
             ... on Comment {
@@ -127,7 +124,9 @@ describe('given some notifications', () => {
             }
           }
           read
-          createdAt
+          createdAt {
+            formatted
+          }
         }
       }
     `
@@ -145,77 +144,80 @@ describe('given some notifications', () => {
 
       describe('no filters', () => {
         it('returns all notifications of current user', async () => {
-          const expected = {
-            data: {
-              notifications: [
-                {
-                  from: {
-                    __typename: 'Comment',
-                    content: 'You have seen this comment mentioning already',
-                  },
-                  read: true,
-                  createdAt: '2019-08-30T15:33:48.651Z',
-                },
-                {
-                  from: {
-                    __typename: 'Post',
-                    content: 'Already seen post mention',
-                  },
-                  read: true,
-                  createdAt: '2019-08-30T17:33:48.651Z',
-                },
-                {
-                  from: {
-                    __typename: 'Comment',
-                    content: 'You have been mentioned in a comment',
-                  },
-                  read: false,
-                  createdAt: '2019-08-30T19:33:48.651Z',
-                },
-                {
-                  from: {
-                    __typename: 'Post',
-                    content: 'You have been mentioned in a post',
-                  },
-                  read: false,
-                  createdAt: '2019-08-31T17:33:48.651Z',
-                },
-              ],
+          const expected = [
+            {
+              from: {
+                __typename: 'Comment',
+                content: 'You have seen this comment mentioning already',
+              },
+              read: true,
+              createdAt: { formatted: expect.any(String) },
             },
-          }
-          await expect(query({ query: notificationQuery, variables })).resolves.toMatchObject(
-            expected,
-          )
+            {
+              from: {
+                __typename: 'Post',
+                title: 'Already seen post title',
+                content: 'Already seen post mention',
+              },
+              read: true,
+              createdAt: { formatted: expect.any(String) },
+            },
+            {
+              from: {
+                __typename: 'Comment',
+                content: 'You have been mentioned in a comment',
+              },
+              read: false,
+              createdAt: { formatted: expect.any(String) },
+            },
+            {
+              from: {
+                __typename: 'Post',
+                title: 'Have been mentioned',
+                content: 'You have been mentioned in a post',
+              },
+              read: false,
+              createdAt: { formatted: expect.any(String) },
+            },
+          ]
+          await expect(query({ query: notificationQuery, variables })).resolves.toMatchObject({
+            data: {
+              notifications: expect.arrayContaining(expected),
+            },
+          })
         })
       })
 
       describe('filter for read: false', () => {
         it('returns only unread notifications of current user', async () => {
-          const expected = expect.objectContaining({
-            data: {
-              notifications: [
-                {
-                  from: {
-                    __typename: 'Comment',
-                    content: 'You have been mentioned in a comment',
-                  },
-                  read: false,
-                  createdAt: '2019-08-30T19:33:48.651Z',
-                },
-                {
-                  from: {
-                    __typename: 'Post',
-                    content: 'You have been mentioned in a post',
-                  },
-                  read: false,
-                  createdAt: '2019-08-31T17:33:48.651Z',
-                },
-              ],
+          const expected = [
+            {
+              from: {
+                __typename: 'Comment',
+                content: 'You have been mentioned in a comment',
+              },
+              read: false,
+              createdAt: { formatted: expect.any(String) },
             },
-          })
+            {
+              from: {
+                __typename: 'Post',
+                title: 'Have been mentioned',
+                content: 'You have been mentioned in a post',
+              },
+              read: false,
+              createdAt: { formatted: expect.any(String) },
+            },
+          ]
           await expect(
             query({ query: notificationQuery, variables: { ...variables, read: false } }),
-          ).resolves.toEqual(expected)
+          ).resolves.toEqual(
+            expect.objectContaining({
+              data: {
+                notifications: expect.arrayContaining(expected),
+              },
+            }),
+          )
         })
 
         describe('if a resource gets deleted', () => {
@@ -230,8 +232,10 @@ describe('given some notifications', () => {
               }
             `
             await expect(
-              mutate({ mutation: deletePostMutation, variables: { id: 'p3' } }),
-            ).resolves.toMatchObject({ data: { DeletePost: { id: 'p3', deleted: true } } })
+              mutate({ mutation: deletePostMutation, variables: { id: 'have-been-mentioned' } }),
+            ).resolves.toMatchObject({
+              data: { DeletePost: { id: 'have-been-mentioned', deleted: true } },
+            })
             authenticatedUser = await user.toJson()
           }
 
@@ -265,7 +269,9 @@ describe('given some notifications', () => {
             }
           }
           read
-          createdAt
+          createdAt {
+            formatted
+          }
         }
       }
     `
@@ -304,7 +310,7 @@ describe('given some notifications', () => {
           beforeEach(async () => {
             variables = {
               ...variables,
-              id: 'p3',
+              id: 'have-been-mentioned',
             }
           })
 
@@ -317,7 +323,7 @@ describe('given some notifications', () => {
                   content: 'You have been mentioned in a post',
                 },
                 read: true,
-                createdAt: '2019-08-31T17:33:48.651Z',
+                createdAt: { formatted: expect.any(String) },
               },
             })
           })
@@ -326,7 +332,7 @@ describe('given some notifications', () => {
             beforeEach(async () => {
               variables = {
                 ...variables,
-                id: 'p2',
+                id: 'already-seen-post',
               }
             })
             it('returns null', async () => {
@@ -354,7 +360,7 @@ describe('given some notifications', () => {
                   content: 'You have been mentioned in a comment',
                 },
                 read: true,
-                createdAt: '2019-08-30T19:33:48.651Z',
+                createdAt: { formatted: expect.any(String) },
               },
             })
           })

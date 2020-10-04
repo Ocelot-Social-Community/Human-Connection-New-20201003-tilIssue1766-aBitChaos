@@ -12,7 +12,7 @@
   <div v-else :class="{ comment: true, 'disabled-content': comment.deleted || comment.disabled }">
     <ds-card :id="`commentId-${comment.id}`">
       <ds-space margin-bottom="small">
-        <hc-user :user="author" :date-time="comment.createdAt" />
+        <hc-user :user="author" :date-time="comment.createdAt.formatted" />
         <!-- Content Menu (can open Modals) -->
         <client-only>
           <content-menu

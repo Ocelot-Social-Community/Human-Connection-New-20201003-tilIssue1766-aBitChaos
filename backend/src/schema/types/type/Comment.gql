@@ -5,7 +5,7 @@ type Comment {
   content: String!
   contentExcerpt: String
   post: Post @relation(name: "COMMENTS", direction: "OUT")
-  createdAt: String
+  createdAt: DateTime
   updatedAt: String
   deleted: Boolean
   disabled: Boolean
@@ -20,14 +20,13 @@ type Mutation {
     contentExcerpt: String
     deleted: Boolean
     disabled: Boolean
-    createdAt: String
-  ): Comment
+    ): Comment
   UpdateComment(
     id: ID!
     content: String!
     contentExcerpt: String
     deleted: Boolean
     disabled: Boolean
-  ): Comment
+    ): Comment
   DeleteComment(id: ID!): Comment
 }
