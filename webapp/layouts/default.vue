@@ -192,7 +192,9 @@ export default {
       return this.$route.path.indexOf(url) === 0
     },
     unfolded: function() {
-      document.getElementById('nav-search-box').classList.add('unfolded')
+      if (window.innerWidth < 765) {
+        document.getElementById('nav-search-box').classList.add('unfolded')
+      }
     },
     foldedup: function() {
       document.getElementById('nav-search-box').classList.remove('unfolded')
@@ -203,8 +205,9 @@ export default {
 <style>
 .unfolded {
   position: absolute;
-  right: 0px;
-  left: 0px;
+  right: 10px;
+  left: 60px;
+  top: 0px;
   z-index: 1;
 }
 </style>
