@@ -135,17 +135,22 @@
     "takeAction": {
       "name": "Take action"
     },
-    "delete": {
-      "submit": "Delete",
-      "cancel": "Cancel",
-      "success": "Post deleted successfully",
-      "title": "Delete Post",
-      "type": "Contribution",
-      "message": "Do you really want to delete the post \"<b>{name}</b>\"?"
+    "menu": {
+      "edit": "Edit Post",
+      "delete": "Delete Post"
     },
     "comment": {
       "submit": "Comment",
       "submitted": "Comment Submitted"
+    }
+  },
+  "comment": {
+    "content": {
+      "unavailable-placeholder": "...this comment is not available anymore"
+    },
+    "menu": {
+      "edit": "Edit Comment",
+      "delete": "Delete Comment"
     }
   },
   "quotes": {
@@ -210,6 +215,22 @@
       "message": "Do you really want to disable the comment from \"<b>{name}</b>\"?"
     }
   },
+  "delete": {
+    "submit": "Delete",
+    "cancel": "Cancel",
+    "contribution": {
+      "title": "Delete Post",
+      "type": "Contribution",
+      "message": "Do you really want to delete the post \"<b>{name}</b>\"?",
+      "success": "Post successfully deleted!"
+    },
+    "comment": {
+      "title": "Delete Comment",
+      "type": "Comment",
+      "message": "Do you really want to delete the comment from \"<b>{name}</b>\"?",
+      "success": "Comment successfully deleted!"
+    }
+  },
   "report": {
     "submit": "Report",
     "cancel": "Cancel",
@@ -230,23 +251,32 @@
       "message": "Do you really want to report the comment from \"<b>{name}</b>\"?"
     }
   },
-  "contribution": {
-    "edit": "Edit Contribution",
-    "delete": "Delete Contribution"
-  },
-  "comment": {
-    "edit": "Edit Comment",
-    "delete": "Delete Comment",
-    "content": {
-      "unavailable-placeholder": "...this comment is not available anymore"
-    }
-  },
   "followButton": {
     "follow": "Follow",
     "following": "Following"
   },
   "shoutButton": {
     "shouted": "shouted"
+  },
+  "release": {
+    "submit": "Release",
+    "cancel": "Cancel",
+    "success": "Released successfully!",
+    "user": {
+      "title": "Release User",
+      "type": "User",
+      "message": "Do you really want to release the user \"<b>{name}</b>\"?"
+    },
+    "contribution": {
+      "title": "Release Contribution",
+      "type": "Contribution",
+      "message": "Do you really want to release the contribution \"<b>{name}</b>\"?"
+    },
+    "comment": {
+      "title": "Release Comment",
+      "type": "Comment",
+      "message": "Do you really want to release the comment from \"<b>{name}</b>\"?"
+    }
   },
   "user": {
     "avatar": {

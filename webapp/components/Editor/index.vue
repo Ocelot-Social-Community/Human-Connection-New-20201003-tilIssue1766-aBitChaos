@@ -1,10 +1,6 @@
 <template>
   <div class="editor">
-    <div
-      v-show="showSuggestions"
-      ref="suggestions"
-      class="suggestion-list"
-    >
+    <div v-show="showSuggestions" ref="suggestions" class="suggestion-list">
       <template v-if="hasResults">
         <div
           v-for="(user, index) in filteredUsers"
@@ -16,12 +12,7 @@
           @{{ user.slug }}
         </div>
       </template>
-      <div
-        v-else
-        class="suggestion-list__item is-empty"
-      >
-        No users found
-      </div>
+      <div v-else class="suggestion-list__item is-empty">No users found</div>
     </div>
 
     <editor-menu-bubble :editor="editor">
@@ -154,10 +145,7 @@
         </ds-button>
       </div>
     </editor-floating-menu>
-    <editor-content
-      ref="editor"
-      :editor="editor"
-    />
+    <editor-content ref="editor" :editor="editor" />
   </div>
 </template>
 
@@ -327,10 +315,18 @@ export default {
       },
     },
   },
+  mounted() {
+    this.$root.$on('changeLanguage', () => {
+      this.changePlaceHolderText()
+    })
+  },
   beforeDestroy() {
     this.editor.destroy()
   },
   methods: {
+    changePlaceHolderText() {
+      this.editor.extensions.options.placeholder.emptyNodeText = this.$t('editor.placeholder')
+    },
     // navigate to the previous item
     // if it's the first item, navigate to the last one
     upHandler() {

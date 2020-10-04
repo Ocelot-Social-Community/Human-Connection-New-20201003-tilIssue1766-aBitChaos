@@ -8,7 +8,7 @@
       :include-styling="false"
       :style="backgroundImage"
       @vdropzone-thumbnail="thumbnail"
-      @vdropzone-drop="vddrop"
+      @vdropzone-error="verror"
     />
   </div>
 </template>
@@ -27,19 +27,30 @@ export default {
     return {
       dropzoneOptions: {
         url: this.vddrop,
-        maxFilesize: 0.5,
+        maxFilesize: 5.0,
         previewTemplate: this.template(),
         dictDefaultMessage: '',
       },
+      error: false,
     }
   },
   computed: {
     backgroundImage() {
-      const { avatar } = this.user || {}
+      const avatar =
+        this.user.avatar ||
+        'https://human-connection.org/wp-content/uploads/2019/03/human-connection-logo.svg'
       const userAvatar = avatar.startsWith('/') ? avatar.replace('/', '/api/') : avatar
       return {
         backgroundImage: `url(${userAvatar})`,
       }
+    },
+  },
+  watch: {
+    error() {
+      let that = this
+      setTimeout(function() {
+        that.error = false
+      }, 2000)
     },
   },
   methods: {
@@ -47,13 +58,6 @@ export default {
       return `<div class="dz-preview dz-file-preview">
                 <div class="dz-image">
                   <div data-dz-thumbnail-bg></div>
-                </div>
-                <div class="dz-details">
-                  <div class="dz-size"><span data-dz-size></span></div>
-                  <div class="dz-filename"><span data-dz-name></span></div>
-                </div>
-                <div class="dz-progress"><span class="dz-upload" data-dz-uploadprogress></span></div>
-                <div class="dz-error-message"><span data-dz-errormessage></span></div>
                 </div>
               </div>
       `
@@ -94,6 +98,12 @@ export default {
         })
         .catch(error => this.$toast.error(error.message))
     },
+    verror(file, message) {
+      if (file.status === 'error') {
+        this.error = true
+        this.$toast.error(file.status, message)
+      }
+    },
   },
 }
 </script>
@@ -117,15 +127,16 @@ export default {
 }
 
 #customdropzone .dz-preview {
+  transition: all 0.2s ease-out;
   width: 160px;
   display: flex;
 }
 
 #customdropzone .dz-preview .dz-image {
-  position: relative;
-  width: 122px;
-  height: 122px;
-  margin: -35px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  overflow: hidden;
 }
 
 #customdropzone .dz-preview .dz-image > div {

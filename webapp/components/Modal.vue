@@ -1,7 +1,16 @@
 <template>
   <div class="modal-wrapper">
+    <!-- Todo: Put all modals with 2 buttons and equal properties in one customiced 'danger-action-modal' -->
     <disable-modal
       v-if="open === 'disable'"
+      :id="data.resource.id"
+      :type="data.type"
+      :name="name"
+      :callbacks="data.callbacks"
+      @close="close"
+    />
+    <release-modal
+      v-if="open === 'release'"
       :id="data.resource.id"
       :type="data.type"
       :name="name"
@@ -12,6 +21,7 @@
       :id="data.resource.id"
       :type="data.type"
       :name="name"
+      :callbacks="data.callbacks"
       @close="close"
     />
     <delete-modal
@@ -19,21 +29,24 @@
       :id="data.resource.id"
       :type="data.type"
       :name="name"
+      :callbacks="data.callbacks"
       @close="close"
     />
   </div>
 </template>
 
 <script>
-import DisableModal from '~/components/Modal/DisableModal'
-import ReportModal from '~/components/Modal/ReportModal'
 import DeleteModal from '~/components/Modal/DeleteModal'
+import DisableModal from '~/components/Modal/DisableModal'
+import ReleaseModal from '~/components/ReleaseModal/ReleaseModal.vue'
+import ReportModal from '~/components/Modal/ReportModal'
 import { mapGetters } from 'vuex'
 
 export default {
   name: 'Modal',
   components: {
     DisableModal,
+    ReleaseModal,
     ReportModal,
     DeleteModal,
   },
