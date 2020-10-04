@@ -149,9 +149,6 @@ For further informations see also our [Kubernetes documentation](https://github.
 
 ```bash
 $ yarn install
-$ cd backend && yarn install
-$ cd ../webapp && yarn install
-$ cd ..
 ```
 
 #### Copy Environment Variables
