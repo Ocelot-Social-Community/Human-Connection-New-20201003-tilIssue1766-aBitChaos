@@ -27,7 +27,7 @@
         primary
       />
     </no-ssr>
-    <hc-load-more v-if="true" :loading="$apollo.loading" @click="showMoreContributions" />
+    <infinite-loading v-if="hasMore" @infinite="bottomPageHandler"></infinite-loading>
   </div>
 </template>
 
@@ -36,14 +36,14 @@ import FilterMenu from '~/components/FilterMenu/FilterMenu.vue'
 import gql from 'graphql-tag'
 import uniqBy from 'lodash/uniqBy'
 import HcPostCard from '~/components/PostCard'
-import HcLoadMore from '~/components/LoadMore.vue'
+import InfiniteLoading from 'vue-infinite-loading'
 import { mapGetters } from 'vuex'
 
 export default {
   components: {
     FilterMenu,
     HcPostCard,
-    HcLoadMore,
+    InfiniteLoading,
   },
   data() {
     const { hashtag = null } = this.$route.query
@@ -51,8 +51,9 @@ export default {
       // Initialize your apollo data
       Post: [],
       page: 1,
-      pageSize: 12,
+      pageSize: 6,
       filter: {},
+      hasMore: true,
       hashtag,
     }
   },
@@ -73,6 +74,14 @@ export default {
     },
   },
   methods: {
+    bottomPageHandler($state) {
+      if (this.$apollo.loading) return
+      this.showMoreContributions(() => {
+        setTimeout(() => {
+          $state.loaded()
+        }, 1000)
+      })
+    },
     changeFilterBubble(filter) {
       if (this.hashtag) {
         filter = {
@@ -98,7 +107,8 @@ export default {
         params: { id: post.id, slug: post.slug },
       }).href
     },
-    showMoreContributions() {
+    showMoreContributions(reachedBottomHandler = () => {}) {
+      if (!this.hasMore) return
       // this.page++
       // Fetch more data and transform the original result
       this.page++
@@ -110,8 +120,10 @@ export default {
         },
         // Transform the previous result with new data
         updateQuery: (previousResult, { fetchMoreResult }) => {
+          this.hasMore = fetchMoreResult.Post && fetchMoreResult.Post.length >= this.pageSize
           let output = { Post: this.Post }
           output.Post = [...previousResult.Post, ...fetchMoreResult.Post]
+          reachedBottomHandler()
           return output
         },
         fetchPolicy: 'cache-and-network',
