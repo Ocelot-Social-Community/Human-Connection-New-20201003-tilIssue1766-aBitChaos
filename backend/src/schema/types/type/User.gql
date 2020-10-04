@@ -4,7 +4,6 @@ type User {
   name: String
   email: String!
   slug: String
-  password: String!
   avatar: String
   coverImg: String
   avatarUpload: Upload
@@ -13,8 +12,9 @@ type User {
   disabledBy: User @relation(name: "DISABLED", direction: "IN")
   role: UserGroup
   publicKey: String
-  privateKey: String
-  
+  isVerified: Boolean
+  invitedBy: User @relation(name: "INVITED", direction: "IN")
+  invited: [User] @relation(name: "INVITED", direction: "OUT")
   wasInvited: Boolean
   wasSeeded: Boolean
 
@@ -77,4 +77,50 @@ type User {
 
   badges: [Badge]! @relation(name: "REWARDED", direction: "IN")
   badgesCount: Int! @cypher(statement: "MATCH (this)<-[:REWARDED]-(r:Badge) RETURN COUNT(r)")
+}
+
+type Query {
+  User(
+    id: ID
+    email: String
+    actorId: String
+    name: String
+    slug: String
+    avatar: String
+    coverImg: String
+    avatarUpload: Upload
+    role: UserGroup
+    locationName: String
+    about: String
+    createdAt: String
+    updatedAt: String
+    friendsCount: Int
+    followingCount: Int
+    followedByCount: Int
+    followedByCurrentUser: Boolean
+    contributionsCount: Int
+    commentsCount: Int
+    commentedCount: Int
+    shoutedCount: Int
+    badgesCount: Int
+    first: Int
+    offset: Int
+    # orderBy: [_UserOrdering]
+    # filter: _UserFilter
+  ): [User]
+}
+
+type Mutation {
+  UpdateUser (
+    id: ID!
+    name: String
+    email: String
+    slug: String
+    avatar: String
+    coverImg: String
+    avatarUpload: Upload
+    locationName: String
+    about: String
+  ): User
+  DeleteUser(id: ID!, resource: [Deletable]): User
 }

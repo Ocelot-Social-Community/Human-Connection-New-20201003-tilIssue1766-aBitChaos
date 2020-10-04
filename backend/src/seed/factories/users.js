@@ -1,51 +1,32 @@
 import faker from 'faker'
 import uuid from 'uuid/v4'
+import { encryptPassword } from '../../schema/resolvers/registration'
+import { neode } from '../../bootstrap/neo4j'
+import slugify from 'slug'
+
+const instance = neode()
 
 export default function create(params) {
-  const {
-    id = uuid(),
-    name = faker.name.findName(),
-    slug = '',
-    email = faker.internet.email(),
-    password = '1234',
-    role = 'user',
-    avatar = faker.internet.avatar(),
-    about = faker.lorem.paragraph(),
-  } = params
-
   return {
-    mutation: `
-      mutation(
-        $id: ID!
-        $name: String
-        $slug: String
-        $password: String!
-        $email: String!
-        $avatar: String
-        $about: String
-        $role: UserGroup
-      ) {
-        CreateUser(
-          id: $id
-          name: $name
-          slug: $slug
-          password: $password
-          email: $email
-          avatar: $avatar
-          about: $about
-          role: $role
-        ) {
-          id
-          name
-          slug
-          email
-          avatar
-          role
-          deleted
-          disabled
-        }
+    factory: async ({ args, driver }) => {
+      const defaults = {
+        id: uuid(),
+        name: faker.name.findName(),
+        email: faker.internet.email(),
+        password: '1234',
+        role: 'user',
+        avatar: faker.internet.avatar(),
+        about: faker.lorem.paragraph(),
+        isVerified: true,
       }
-    `,
-    variables: { id, name, slug, password, email, avatar, about, role },
+      defaults.slug = slugify(defaults.name, { lower: true })
+      args = {
+        ...defaults,
+        ...args,
+      }
+      args = await encryptPassword(args)
+      const user = await instance.create('User', args)
+      return user.toJson()
+    },
   }
 }

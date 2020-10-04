@@ -1,4 +1,4 @@
-import { rule, shield, deny, allow, or } from 'graphql-shield'
+import { rule, shield, deny, allow, and, or, not } from 'graphql-shield'
 
 /*
  * TODO: implement
@@ -68,6 +68,29 @@ const onlyEnabledContent = rule({
   return !(disabled || deleted)
 })
 
+const invitationLimitReached = rule({
+  cache: 'no_cache',
+})(async (parent, args, { user, driver }) => {
+  const session = driver.session()
+  try {
+    const result = await session.run(
+      `
+      MATCH (user:User {id:$id})-[:GENERATED]->(i:InvitationCode)
+      RETURN COUNT(i) as count
+      `,
+      { id: user.id },
+    )
+    const [count] = result.records.map(record => {
+      return record.get('count').toNumber()
+    })
+    return count >= 3
+  } catch (e) {
+    throw e
+  } finally {
+    session.close()
+  }
+})
+
 const isAuthor = rule({
   cache: 'no_cache',
 })(async (parent, args, { user, driver }) => {
@@ -99,6 +122,12 @@ const isDeletingOwnAccount = rule({
   return context.user.id === args.id
 })
 
+const noEmailFilter = rule({
+  cache: 'no_cache',
+})(async (_, args) => {
+  return !('email' in args)
+})
+
 // Permissions
 const permissions = shield(
   {
@@ -113,14 +142,17 @@ const permissions = shield(
       currentUser: allow,
       Post: or(onlyEnabledContent, isModerator),
       Comment: allow,
-      User: allow,
+      User: or(noEmailFilter, isAdmin),
       isLoggedIn: allow,
     },
     Mutation: {
       '*': deny,
       login: allow,
+      SignupByInvitation: allow,
+      Signup: isAdmin,
+      SignupVerification: allow,
+      CreateInvitationCode: and(isAuthenticated, or(not(invitationLimitReached), isAdmin)),
       UpdateNotification: belongsToMe,
-      CreateUser: isAdmin,
       UpdateUser: onlyYourself,
       CreatePost: isAuthenticated,
       UpdatePost: isAuthor,
@@ -152,8 +184,6 @@ const permissions = shield(
     },
     User: {
       email: isMyOwn,
-      password: isMyOwn,
-      privateKey: isMyOwn,
     },
   },
   {
