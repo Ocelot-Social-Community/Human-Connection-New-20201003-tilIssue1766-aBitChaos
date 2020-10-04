@@ -31,6 +31,9 @@
     "bank": "Bankverbindung",
     "germany": "Deutschland",
     "code-of-conduct": "Verhaltenscodex",
+    "termsAndConditionsNoChecked": "Bitte lies und bestätige die Nutzungsbedingungen!",
+    "termsAndConditionsNewConfirm": "Neue Nutzungsbedingungen bestätigen!",
+    "termsAndConditionsNewTitle": "Neue Nutzerbedingungen",
     "termsAndConditionsConfirmed": "Ich habe die <a href=\"/terms-and-conditions\" target=\"_blank\">Nutzungsbedingungen</a> durchgelesen und stimme ihnen zu."
   },
   "sorting": {

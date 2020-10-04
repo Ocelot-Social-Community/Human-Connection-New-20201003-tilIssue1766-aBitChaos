@@ -75,6 +75,8 @@
 
 <script>
 import LocaleSwitch from '~/components/LocaleSwitch/LocaleSwitch'
+import { mapActions } from 'vuex'
+// import tests from '../layouts/default.vue'
 
 export default {
   components: {
@@ -108,10 +110,14 @@ export default {
     }, 50)
   },
   methods: {
+    ...mapActions({
+      checkTermsAndConditions: 'auth/checkTermsAndConditions',
+    }),
     async onSubmit() {
       try {
         await this.$store.dispatch('auth/login', { ...this.form })
         this.$toast.success(this.$t('login.success'))
+        this.checkTermsAndConditions()
         this.$router.replace(this.$route.query.path || '/')
       } catch (err) {
         this.$toast.error(err.message)

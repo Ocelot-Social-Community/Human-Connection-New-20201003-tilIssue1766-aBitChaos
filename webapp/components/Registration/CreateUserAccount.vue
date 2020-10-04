@@ -121,6 +121,7 @@ export default {
       disabled: true,
       success: null,
       backendErrors: null,
+
       // TODO: Our styleguide does not support checkmarks.
       // Integrate termsAndConditionsConfirmed into `this.formData` once we
       // have checkmarks available.
@@ -132,23 +133,30 @@ export default {
     email: { type: String, required: true },
   },
   methods: {
+    checked: function() {
+      this.backendErrors = { message: '' }
+    },
     async submit() {
-      const { name, password, about } = this.formData
-      const { email, nonce } = this
-      try {
-        await this.$apollo.mutate({
-          mutation: SignupVerificationMutation,
-          variables: { name, password, about, email, nonce },
-        })
-        this.success = true
-        setTimeout(() => {
-          this.$emit('userCreated', {
-            email,
-            password,
+      if (this.checkedDefault) {
+        const { name, password, about } = this.formData
+        const { email, nonce } = this
+        try {
+          await this.$apollo.mutate({
+            mutation: SignupVerificationMutation,
+            variables: { name, password, about, email, nonce },
           })
-        }, 3000)
-      } catch (err) {
-        this.backendErrors = err
+          this.success = true
+          setTimeout(() => {
+            this.$emit('userCreated', {
+              email,
+              password,
+            })
+          }, 3000)
+        } catch (err) {
+          this.backendErrors = err
+        }
+      } else {
+        this.backendErrors = { message: this.$t(`site.termsAndConditionsNoChecked`) }
       }
     },
   },

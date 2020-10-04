@@ -194,6 +194,7 @@ const permissions = shield(
       DeleteUser: isDeletingOwnAccount,
       requestPasswordReset: allow,
       resetPassword: allow,
+      acceptTermsAndCondition: allow,
       AddPostEmotions: isAuthenticated,
       RemovePostEmotions: isAuthenticated,
       block: isAuthenticated,

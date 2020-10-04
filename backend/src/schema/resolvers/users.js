@@ -57,6 +57,10 @@ export default {
     },
   },
   Mutation: {
+    acceptTermsAndCondition: async (object, args, context, resolveInfo) => {
+      return true
+    },
+
     block: async (object, args, context, resolveInfo) => {
       const { user: currentUser } = context
       if (currentUser.id === args.id) return null

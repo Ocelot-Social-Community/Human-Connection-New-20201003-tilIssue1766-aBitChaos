@@ -157,7 +157,15 @@ import HcAvatar from '~/components/Avatar/Avatar.vue'
 import seo from '~/mixins/seo'
 import FilterPosts from '~/components/FilterPosts/FilterPosts.vue'
 import CategoryQuery from '~/graphql/CategoryQuery.js'
+
 export default {
+  data() {
+    return {
+      mobileSearchVisible: false,
+      toggleMobileMenu: false,
+      categories: [],
+    }
+  },
   components: {
     Dropdown,
     LocaleSwitch,
@@ -168,13 +176,7 @@ export default {
     FilterPosts,
   },
   mixins: [seo],
-  data() {
-    return {
-      mobileSearchVisible: false,
-      toggleMobileMenu: false,
-      categories: [],
-    }
-  },
+
   computed: {
     ...mapGetters({
       user: 'auth/user',
@@ -227,6 +229,7 @@ export default {
       return firstRoute.name === 'index'
     },
   },
+
   watch: {
     Category(category) {
       this.categories = category || []

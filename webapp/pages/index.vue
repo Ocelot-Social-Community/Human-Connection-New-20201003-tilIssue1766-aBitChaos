@@ -42,7 +42,7 @@ import FilterMenu from '~/components/FilterMenu/FilterMenu.vue'
 import uniqBy from 'lodash/uniqBy'
 import HcPostCard from '~/components/PostCard'
 import HcLoadMore from '~/components/LoadMore.vue'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapMutations } from 'vuex'
 import { filterPosts } from '~/graphql/PostQuery.js'
 
 export default {
@@ -92,9 +92,39 @@ export default {
       ],
     }
   },
+
+  mounted() {
+    if (this.hashtag) {
+      this.changeFilterBubble({ tags_some: { name: this.hashtag } })
+    }
+    if (!this.hasAgreedToLatestTermsAndConditions) {
+      this.$router.push('terms-and-conditions')
+    }
+  },
+
   computed: {
     ...mapGetters({
+      currentUser: 'auth/user',
+      posts: 'posts/posts',
       postsFilter: 'postsFilter/postsFilter',
+      hasAgreedToLatestTermsAndConditions: 'auth/hasAgreedToLatestTermsAndConditions',
+    }),
+    tags() {
+      return this.posts ? this.posts.tags.map(tag => tag.name) : '-'
+    },
+    offset() {
+      return (this.page - 1) * this.pageSize
+    },
+  },
+  watch: {
+    postsFilter() {
+      this.offset = 0
+      this.posts = []
+    },
+  },
+  methods: {
+    ...mapMutations({
+      setPosts: 'posts/SET_POSTS',
     }),
     finalFilters() {
       let filter = this.postsFilter
@@ -106,14 +136,7 @@ export default {
       }
       return filter
     },
-  },
-  watch: {
-    postsFilter() {
-      this.offset = 0
-      this.posts = []
-    },
-  },
-  methods: {
+
     toggleOnlySorting(x) {
       this.offset = 0
       this.posts = []
