@@ -162,6 +162,7 @@ const permissions = shield(
       DeletePost: isAuthor,
       report: isAuthenticated,
       CreateSocialMedia: isAuthenticated,
+      UpdateSocialMedia: isAuthenticated,
       DeleteSocialMedia: isAuthenticated,
       // AddBadgeRewarded: isAdmin,
       // RemoveBadgeRewarded: isAdmin,
