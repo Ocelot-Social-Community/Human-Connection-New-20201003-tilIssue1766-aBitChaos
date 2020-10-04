@@ -15,7 +15,7 @@
       :schema="formSchema"
       @submit="submit"
     >
-      <template slot-scope="{ errors }">
+      <template>
         <ds-card :header="$t('registration.create-user-account.title')">
           <ds-input
             id="name"
@@ -39,13 +39,15 @@
             autocomplete="off"
             :label="$t('settings.security.change-password.label-new-password')"
           />
-          <ds-input
-            id="passwordConfirmation"
-            model="passwordConfirmation"
-            type="password"
-            autocomplete="off"
-            :label="$t('settings.security.change-password.label-new-password-confirm')"
-          />
+          <div v-on:click="checkedConfimed = false">
+            <ds-input
+              id="passwordConfirmation"
+              model="passwordConfirmation"
+              type="password"
+              autocomplete="off"
+              :label="$t('settings.security.change-password.label-new-password-confirm')"
+            />
+          </div>
           <password-strength :password="formData.password" />
 
           <ds-text>
@@ -118,7 +120,7 @@ export default {
         },
         ...passwordForm.formSchema,
       },
-      disabled: true,
+      errors: true,
       success: null,
       backendErrors: null,
       // TODO: Our styleguide does not support checkmarks.
