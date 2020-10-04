@@ -10,11 +10,11 @@ To test all the pieces together, from the user perspective, we use integration t
 
 Individual Vue Components should also be documented and tested properly. This guarantees that they are reusable and the api gets more solid in the process.
 
-[more...](webapp/testing.md)
+[more...](webapp/TESTING.md)
 
 ## Unit Testing
 
 Expecially the Backend relies on Unit Tests, as there are no Vue Components.
 
-[more...](backend/testing.md)
+[more...](backend/TESTING.md)
 

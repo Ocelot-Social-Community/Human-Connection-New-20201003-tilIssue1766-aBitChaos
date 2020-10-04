@@ -276,4 +276,3 @@ Shows automatically related actions for existing post.
 * Receiving Undo and Delete Activities for Articles and Notes
 * Serving Webfinger records and Actor Objects
 * Serving Followers, Following and Outbox collections
-
