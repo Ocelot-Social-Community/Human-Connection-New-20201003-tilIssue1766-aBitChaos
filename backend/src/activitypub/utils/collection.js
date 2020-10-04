@@ -5,10 +5,10 @@ const debug = require('debug')('ea:utils:collections')
 export function createOrderedCollection (name, collectionName) {
   return {
     '@context': 'https://www.w3.org/ns/activitystreams',
-    'id': `${activityPub.endpoint}/activitypub/users/${name}/${collectionName}`,
+    'id': `${activityPub.endpoint}/api/users/${name}/${collectionName}`,
     'summary': `${name}s ${collectionName} collection`,
     'type': 'OrderedCollection',
-    'first': `${activityPub.endpoint}/activitypub/users/${name}/${collectionName}?page=true`,
+    'first': `${activityPub.endpoint}/api/users/${name}/${collectionName}?page=true`,
     'totalItems': 0
   }
 }
@@ -16,41 +16,41 @@ export function createOrderedCollection (name, collectionName) {
 export function createOrderedCollectionPage (name, collectionName) {
   return {
     '@context': 'https://www.w3.org/ns/activitystreams',
-    'id': `${activityPub.endpoint}/activitypub/users/${name}/${collectionName}?page=true`,
+    'id': `${activityPub.endpoint}/api/users/${name}/${collectionName}?page=true`,
     'summary': `${name}s ${collectionName} collection`,
     'type': 'OrderedCollectionPage',
     'totalItems': 0,
-    'partOf': `${activityPub.endpoint}/activitypub/users/${name}/${collectionName}`,
+    'partOf': `${activityPub.endpoint}/api/users/${name}/${collectionName}`,
     'orderedItems': []
   }
 }
-export function sendCollection (collectionName, req, res) {
+export async function sendCollection (collectionName, req, res) {
   const name = req.params.name
   const id = constructIdFromName(name)
 
   switch (collectionName) {
   case 'followers':
-    attachThenCatch(activityPub.collections.getFollowersCollection(id), res)
+    await attachThenCatch(activityPub.collections.getFollowersCollection(id), res)
     break
 
   case 'followersPage':
-    attachThenCatch(activityPub.collections.getFollowersCollectionPage(id), res)
+    await attachThenCatch(activityPub.collections.getFollowersCollectionPage(id), res)
     break
 
   case 'following':
-    attachThenCatch(activityPub.collections.getFollowingCollection(id), res)
+    await attachThenCatch(activityPub.collections.getFollowingCollection(id), res)
     break
 
   case 'followingPage':
-    attachThenCatch(activityPub.collections.getFollowingCollectionPage(id), res)
+    await attachThenCatch(activityPub.collections.getFollowingCollectionPage(id), res)
     break
 
   case 'outbox':
-    attachThenCatch(activityPub.collections.getOutboxCollection(id), res)
+    await attachThenCatch(activityPub.collections.getOutboxCollection(id), res)
     break
 
   case 'outboxPage':
-    attachThenCatch(activityPub.collections.getOutboxCollectionPage(id), res)
+    await attachThenCatch(activityPub.collections.getOutboxCollectionPage(id), res)
     break
 
   default:

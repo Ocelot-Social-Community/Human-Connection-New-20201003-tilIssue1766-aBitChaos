@@ -1,34 +1,33 @@
 import { activityPub } from '../ActivityPub'
-import { signAndSend, throwErrorIfApolloErrorOccurred } from './index'
-
+import { signAndSend } from './index'
 import crypto from 'crypto'
 import as from 'activitystrea.ms'
-import gql from 'graphql-tag'
 const debug = require('debug')('ea:utils:activity')
 
-export function createNoteObject (text, name, id, published) {
-  const createUuid = crypto.randomBytes(16).toString('hex')
-
-  return {
+export async function createNoteObject (activityId, objectId, text, actorId, id, published, updated) {
+  const object = {
     '@context': 'https://www.w3.org/ns/activitystreams',
-    'id': `${activityPub.endpoint}/activitypub/users/${name}/status/${createUuid}`,
+    'id': `${activityId}`,
     'type': 'Create',
-    'actor': `${activityPub.endpoint}/activitypub/users/${name}`,
+    'actor': `${actorId}`,
     'object': {
-      'id': `${activityPub.endpoint}/activitypub/users/${name}/status/${id}`,
+      'id': `${objectId}`,
       'type': 'Note',
       'published': published,
-      'attributedTo': `${activityPub.endpoint}/activitypub/users/${name}`,
+      'attributedTo': `${actorId}`,
       'content': text,
-      'to': 'https://www.w3.org/ns/activitystreams#Public'
+      'to': ['https://www.w3.org/ns/activitystreams#Public']
     }
   }
+  if (updated) {
+    object.type = 'Update'
+    object.updated = updated
+  }
+  return object
 }
 
-export async function createArticleObject (activityId, objectId, text, name, id, published) {
-  const actorId = await getActorId(name)
-
-  return {
+export async function createArticleObject (activityId, objectId, text, actorId, id, published, updated) {
+  const object = {
     '@context': 'https://www.w3.org/ns/activitystreams',
     'id': `${activityId}`,
     'type': 'Create',
@@ -42,30 +41,17 @@ export async function createArticleObject (activityId, objectId, text, name, id,
       'to': 'https://www.w3.org/ns/activitystreams#Public'
     }
   }
-}
-
-export async function getActorId (name) {
-  const result = await activityPub.dataSource.client.query({
-    query: gql`
-        query {
-            User(slug: "${name}") {
-                actorId
-            }
-        }
-    `
-  })
-  throwErrorIfApolloErrorOccurred(result)
-  if (Array.isArray(result.data.User) && result.data.User[0]) {
-    return result.data.User[0].actorId
-  } else {
-    throw Error(`No user with name: ${name}`)
+  if (updated) {
+    object.type = 'Update'
+    object.object.updated = updated
   }
+  return object
 }
 
 export function sendAcceptActivity (theBody, name, targetDomain, url) {
   as.accept()
-    .id(`${activityPub.endpoint}/activitypub/users/${name}/status/` + crypto.randomBytes(16).toString('hex'))
-    .actor(`${activityPub.endpoint}/activitypub/users/${name}`)
+    .id(`${activityPub.endpoint}/api/users/${name}/status/` + crypto.randomBytes(16).toString('hex'))
+    .actor(`${activityPub.endpoint}/api/users/${name}`)
     .object(theBody)
     .prettyWrite((err, doc) => {
       if (!err) {
@@ -79,8 +65,8 @@ export function sendAcceptActivity (theBody, name, targetDomain, url) {
 
 export function sendRejectActivity (theBody, name, targetDomain, url) {
   as.reject()
-    .id(`${activityPub.endpoint}/activitypub/users/${name}/status/` + crypto.randomBytes(16).toString('hex'))
-    .actor(`${activityPub.endpoint}/activitypub/users/${name}`)
+    .id(`${activityPub.endpoint}/api/users/${name}/status/` + crypto.randomBytes(16).toString('hex'))
+    .actor(`${activityPub.endpoint}/api/users/${name}`)
     .object(theBody)
     .prettyWrite((err, doc) => {
       if (!err) {

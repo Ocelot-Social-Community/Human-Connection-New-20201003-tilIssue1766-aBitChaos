@@ -1,22 +1,18 @@
 import { generateRsaKeyPair } from '../activitypub/security'
 import { activityPub } from '../activitypub/ActivityPub'
 import as from 'activitystrea.ms'
-import dotenv from 'dotenv'
-
-const debug = require('debug')('backend:schema')
-dotenv.config()
 
 export default {
   Mutation: {
     CreatePost: async (resolve, root, args, context, info) => {
-      args.activityId = activityPub.generateStatusId(context.user.slug)
-      args.objectId = activityPub.generateStatusId(context.user.slug)
+      args.activityId = args.activityId || activityPub.generateStatusId(context.user.slug)
+      args.objectId = args.objectId || activityPub.generateStatusId(context.user.slug)
 
       const post = await resolve(root, args, context, info)
 
       const { user: author } = context
       const actorId = author.actorId
-      debug(`actorId = ${actorId}`)
+
       const createActivity = await new Promise((resolve, reject) => {
         as.create()
           .id(`${actorId}/status/${args.activityId}`)
@@ -32,9 +28,7 @@ export default {
             if (err) {
               reject(err)
             } else {
-              debug(doc)
               const parsedDoc = JSON.parse(doc)
-              parsedDoc.send = true
               resolve(JSON.stringify(parsedDoc))
             }
           })
@@ -42,14 +36,13 @@ export default {
       try {
         await activityPub.sendActivity(createActivity)
       } catch (e) {
-        debug(`error sending post activity\n${e}`)
+
       }
       return post
     },
     CreateUser: async (resolve, root, args, context, info) => {
       const keys = generateRsaKeyPair()
       Object.assign(args, keys)
-      args.actorId = `${activityPub.host}/activitypub/users/${args.slug}`
       return resolve(root, args, context, info)
     }
   }

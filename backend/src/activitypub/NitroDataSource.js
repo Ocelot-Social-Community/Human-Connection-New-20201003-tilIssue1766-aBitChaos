@@ -12,46 +12,75 @@ import {
   createArticleObject,
   isPublicAddressed
 } from './utils/activity'
-import crypto from 'crypto'
 import gql from 'graphql-tag'
 import { createHttpLink } from 'apollo-link-http'
 import { setContext } from 'apollo-link-context'
 import { InMemoryCache } from 'apollo-cache-inmemory'
-import fetch from 'node-fetch'
 import { ApolloClient } from 'apollo-client'
+import fetch from 'node-fetch'
 import trunc from 'trunc-html'
+import { getDriver } from '../bootstrap/neo4j'
+import uuid from 'uuid/v4'
+import encode from '../jwt/encode'
+
 const debug = require('debug')('ea:nitro-datasource')
 
-export default class NitroDataSource {
-  constructor (uri) {
-    this.uri = uri
-    const defaultOptions = {
-      query: {
-        fetchPolicy: 'network-only',
-        errorPolicy: 'all'
+export default NitroDataSource
+
+function NitroDataSource (uri) {
+  this.uri = uri
+  const driver = getDriver()
+  let defaultToken
+  let token = defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJuYW1lIjoiUGV0ZXIgTHVzdGlnIiwiYXZhdGFyIjoiaHR0cHM6Ly9zMy5hbWF6b25hd3MuY29tL3VpZmFjZXMvZmFjZXMvdHdpdHRlci9qb2huY2FmYXp6YS8xMjguanBnIiwiaWQiOiJ1MSIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5vcmciLCJzbHVnIjoicGV0ZXItbHVzdGlnIiwiaWF0IjoxNTUyNDIwMTExLCJleHAiOjE2Mzg4MjAxMTEsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwMCIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NDAwMCIsInN1YiI6InUxIn0.G7An1yeQUViJs-0Qj-Tc-zm0WrLCMB3M02pfPnm6xzw'
+  const defaultOptions = {
+    query: {
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all'
+    }
+  }
+  const link = createHttpLink({ uri: this.uri, fetch: fetch }) // eslint-disable-line
+  const cache = new InMemoryCache()
+  const authLink = setContext(async (_, { headers }) => {
+    // return the headers to the context so httpLink can read them
+    return {
+      headers: {
+        ...headers,
+        Authorization: token ? `Bearer ${token}` : ''
       }
     }
-    const link = createHttpLink({ uri: this.uri, fetch: fetch }) // eslint-disable-line
-    const cache = new InMemoryCache()
-    const authLink = setContext((_, { headers }) => {
-      // generate the authentication token (maybe from env? Which user?)
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJuYW1lIjoiUGV0ZXIgTHVzdGlnIiwiYXZhdGFyIjoiaHR0cHM6Ly9zMy5hbWF6b25hd3MuY29tL3VpZmFjZXMvZmFjZXMvdHdpdHRlci9qb2huY2FmYXp6YS8xMjguanBnIiwiaWQiOiJ1MSIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5vcmciLCJzbHVnIjoicGV0ZXItbHVzdGlnIiwiaWF0IjoxNTUyNDIwMTExLCJleHAiOjE2Mzg4MjAxMTEsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwMCIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NDAwMCIsInN1YiI6InUxIn0.G7An1yeQUViJs-0Qj-Tc-zm0WrLCMB3M02pfPnm6xzw'
-      // return the headers to the context so httpLink can read them
-      return {
-        headers: {
-          ...headers,
-          Authorization: token ? `Bearer ${token}` : ''
-        }
-      }
+  })
+
+  this.client = new ApolloClient({
+    link: authLink.concat(link),
+    cache: cache,
+    defaultOptions
+  })
+
+  this.setToken = async function (actorId) {
+    if (!actorId) {
+      token = defaultToken
+      return
+    }
+    const splitted = actorId.split('/')
+    const slug = splitted.length === 1 ? actorId : extractNameFromId(actorId)
+    const session = driver.session()
+    const result = await session.run('MATCH (u:User) WHERE u.slug = { slug } RETURN u', {
+      slug: slug
+    }).catch(() => {
+      session.close()
+      token = defaultToken
     })
-    this.client = new ApolloClient({
-      link: authLink.concat(link),
-      cache: cache,
-      defaultOptions
-    })
+    session.close()
+    if (result.records.length === 0) {
+      token = defaultToken
+      return
+    }
+    const user = result.records[0].get('u').properties
+    token = encode(user)
   }
 
-  async getFollowersCollection (actorId) {
+  this.getFollowersCollection = async (actorId) => {
+    await this.setToken()
     const slug = extractNameFromId(actorId)
     debug(`slug= ${slug}`)
     const result = await this.client.query({
@@ -78,7 +107,8 @@ export default class NitroDataSource {
     }
   }
 
-  async getFollowersCollectionPage (actorId) {
+  this.getFollowersCollectionPage = async (actorId) => {
+    await this.setToken()
     const slug = extractNameFromId(actorId)
     debug(`getFollowersPage slug = ${slug}`)
     const result = await this.client.query({
@@ -115,7 +145,8 @@ export default class NitroDataSource {
     }
   }
 
-  async getFollowingCollection (actorId) {
+  this.getFollowingCollection = async (actorId) => {
+    await this.setToken()
     const slug = extractNameFromId(actorId)
     const result = await this.client.query({
       query: gql`
@@ -141,7 +172,8 @@ export default class NitroDataSource {
     }
   }
 
-  async getFollowingCollectionPage (actorId) {
+  this.getFollowingCollectionPage = async (actorId) => {
+    await this.setToken()
     const slug = extractNameFromId(actorId)
     const result = await this.client.query({
       query: gql`
@@ -177,18 +209,15 @@ export default class NitroDataSource {
     }
   }
 
-  async getOutboxCollection (actorId) {
+  this.getOutboxCollection = async (actorId) => {
+    await this.setToken()
     const slug = extractNameFromId(actorId)
     const result = await this.client.query({
       query: gql`
           query {
-              User(slug:"${slug}") {
+              User(slug: "${slug}") {
                   contributions {
-                      title
                       slug
-                      content
-                      contentExcerpt
-                      createdAt
                   }
               }
           }
@@ -209,7 +238,8 @@ export default class NitroDataSource {
     }
   }
 
-  async getOutboxCollectionPage (actorId) {
+  this.getOutboxCollectionPage = async (actorId) => {
+    await this.setToken()
     const slug = extractNameFromId(actorId)
     debug(`inside getting outbox collection page => ${slug}`)
     const result = await this.client.query({
@@ -217,6 +247,7 @@ export default class NitroDataSource {
           query {
               User(slug:"${slug}") {
                   actorId
+                  slug
                   contributions {
                       id
                       activityId
@@ -226,9 +257,7 @@ export default class NitroDataSource {
                       content
                       contentExcerpt
                       createdAt
-                      author {
-                          slug
-                      }
+                      updatedAt
                   }
               }
           }
@@ -244,7 +273,7 @@ export default class NitroDataSource {
       outboxCollection.totalItems = posts.length
       await Promise.all(
         posts.map(async (post) => {
-          outboxCollection.orderedItems.push(await createArticleObject(post.activityId, post.objectId, post.content, post.author.slug, post.id, post.createdAt))
+          outboxCollection.orderedItems.push(await createArticleObject(post.activityId, post.objectId, post.content, actor.actorId, post.id, post.createdAt, post.updatedAt))
         })
       )
 
@@ -255,9 +284,10 @@ export default class NitroDataSource {
     }
   }
 
-  async undoFollowActivity (fromActorId, toActorId) {
-    const fromUserId = await this.ensureUser(fromActorId)
-    const toUserId = await this.ensureUser(toActorId)
+  this.undoFollowActivity = async (fromActorId, toActorId) => {
+    const fromUserId = await ensureUser(fromActorId)
+    const toUserId = await ensureUser(toActorId)
+    await this.setToken(fromActorId)
     const result = await this.client.mutate({
       mutation: gql`
           mutation {
@@ -271,17 +301,18 @@ export default class NitroDataSource {
     throwErrorIfApolloErrorOccurred(result)
   }
 
-  async saveFollowersCollectionPage (followersCollection, onlyNewestItem = true) {
+  this.saveFollowersCollectionPage = async (followersCollection, onlyNewestItem = true) => {
     debug('inside saveFollowers')
     let orderedItems = followersCollection.orderedItems
     const toUserName = extractNameFromId(followersCollection.id)
-    const toUserId = await this.ensureUser(constructIdFromName(toUserName))
+    const toUserId = await ensureUser(constructIdFromName(toUserName))
+    await this.setToken(followersCollection.id)
     orderedItems = onlyNewestItem ? [orderedItems.pop()] : orderedItems
 
     return Promise.all(
       orderedItems.map(async (follower) => {
         debug(`follower = ${follower}`)
-        const fromUserId = await this.ensureUser(follower)
+        const fromUserId = await ensureUser(follower)
         debug(`fromUserId = ${fromUserId}`)
         debug(`toUserId = ${toUserId}`)
         const result = await this.client.mutate({
@@ -299,16 +330,18 @@ export default class NitroDataSource {
       })
     )
   }
-  async saveFollowingCollectionPage (followingCollection, onlyNewestItem = true) {
+
+  this.saveFollowingCollectionPage = async (followingCollection, onlyNewestItem = true) => {
     debug('inside saveFollowers')
     let orderedItems = followingCollection.orderedItems
     const fromUserName = extractNameFromId(followingCollection.id)
-    const fromUserId = await this.ensureUser(constructIdFromName(fromUserName))
+    const fromUserId = await ensureUser(constructIdFromName(fromUserName))
+    await this.setToken(followingCollection.id)
     orderedItems = onlyNewestItem ? [orderedItems.pop()] : orderedItems
     return Promise.all(
       orderedItems.map(async (following) => {
         debug(`follower = ${following}`)
-        const toUserId = await this.ensureUser(following)
+        const toUserId = await ensureUser(following)
         debug(`fromUserId = ${fromUserId}`)
         debug(`toUserId = ${toUserId}`)
         const result = await this.client.mutate({
@@ -320,14 +353,16 @@ export default class NitroDataSource {
               }
           `
         })
-        debug(`addUserFollowing edge = ${JSON.stringify(result, null, 2)}`)
+
         throwErrorIfApolloErrorOccurred(result)
         debug('saveFollowing: added follow edge successfully')
       })
     )
   }
 
-  async createPost (activity) {
+  this.createPost = async (activity) => {
+    const userId = await ensureUser(activity.actor)
+    await this.setToken(activity.actor)
     // TODO how to handle the to field? Now the post is just created, doesn't matter who is the recipient
     // createPost
     const postObject = activity.object
@@ -349,126 +384,128 @@ export default class NitroDataSource {
 
     throwErrorIfApolloErrorOccurred(result)
 
-    // ensure user and add author to post
-    const userId = await this.ensureUser(postObject.attributedTo)
+    // add author to post
     debug(`userId = ${userId}`)
     debug(`postId = ${postId}`)
-    result = await this.client.mutate({
+  }
+
+  this.deletePost = async (activity) => {
+    await this.setToken(activity.actor)
+    const postId = extractIdFromActivityId(activity.object.id)
+    const result = await this.client.mutate({
       mutation: gql`
           mutation {
-              AddPostAuthor(from: {id: "${userId}"}, to: {id: "${postId}"}) {
-                  from {
-                      name
-                  }
+              DeletePost(id: "${postId}") {
+                  title
               }
           }
       `
     })
-
     throwErrorIfApolloErrorOccurred(result)
   }
 
-  async deletePost (activity) {
-    const result = await this.client.mutate({
-      mutation: gql`
-        mutation {
-            DeletePost(id: "${extractIdFromActivityId(activity.object.id)}") {
-                title
-            }
-        }
-      `
-    })
-    throwErrorIfApolloErrorOccurred(result)
-  }
-
-  async updatePost (activity) {
+  this.updatePost = async (activity) => {
+    await this.setToken(activity.actor)
     const postObject = activity.object
     const postId = extractIdFromActivityId(postObject.id)
     const date = postObject.updated ? postObject.updated : new Date().toISOString()
-    const result = await this.client.mutate({
-      mutation: gql`
-        mutation {
-            UpdatePost(content: "${postObject.content}", contentExcerpt: "${trunc(postObject.content, 120).html}", id: "${postId}", updatedAt: "${date}") {
-                title
-            }
-        }
-      `
-    })
-    throwErrorIfApolloErrorOccurred(result)
-  }
-
-  async createShouted (activity) {
-    const userId = await this.ensureUser(activity.actor)
-    const postId = extractIdFromActivityId(activity.object)
+    const title = postObject.summary ? postObject.summary : postObject.content.split(' ').slice(0, 5).join(' ')
     const result = await this.client.mutate({
       mutation: gql`
           mutation {
-              AddUserShouted(from: {id: "${userId}"}, to: {id: "${postId}"}) {
-                  from {
-                      name
-                  }
+              UpdatePost(content: "${postObject.content}", contentExcerpt: "${trunc(postObject.content, 120).html}", id: "${postId}", title: "${title}", updatedAt: "${date}") {
+                  title
               }
           }
       `
     })
     throwErrorIfApolloErrorOccurred(result)
-    if (!result.data.AddUserShouted) {
+  }
+
+  this.createLike = async (activity) => {
+    await ensureUser(activity.actor)
+    await this.setToken(activity.actor)
+    const postId = extractIdFromActivityId(activity.object)
+    const result = await this.client.mutate({
+      mutation: gql`
+          mutation {
+            shout(id: "${postId}", type: Post)
+          }
+      `
+    })
+    throwErrorIfApolloErrorOccurred(result)
+    if (!result.data.shout) {
       debug('something went wrong shouting post')
-      throw Error('User or Post not exists')
+      return Promise.reject(Error('User or Post not exists'))
     }
   }
 
-  async deleteShouted (activity) {
-    const userId = await this.ensureUser(activity.actor)
-    const postId = extractIdFromActivityId(activity.object)
+  this.deleteLike = async (activity) => {
+    await this.setToken(activity.actor)
+    const postId = extractIdFromActivityId(activity.object.object)
     const result = await this.client.mutate({
       mutation: gql`
           mutation {
-              RemoveUserShouted(from: {id: "${userId}"}, to: {id: "${postId}"}) {
-                  from {
-                      name
-                  }
-              }
+            unshout(id: "${postId}", type: Post)
           }
       `
     })
     throwErrorIfApolloErrorOccurred(result)
-    if (!result.data.AddUserShouted) {
+    if (!result.data.unshout) {
       debug('something went wrong disliking a post')
-      throw Error('User or Post not exists')
+      return Promise.reject(Error('User or Post not exists'))
     }
   }
 
-  async getSharedInboxEndpoints () {
+  this.getSharedInboxEndpoints = async () => {
+    await this.setToken()
     const result = await this.client.query({
       query: gql`
-        query {
-            SharedInboxEndpoint {
-                uri
-            }
-        }
+          query {
+              SharedInboxEndpoint {
+                  uri
+              }
+          }
       `
     })
     throwErrorIfApolloErrorOccurred(result)
     return result.data.SharedInboxEnpoint
   }
-  async addSharedInboxEndpoint (uri) {
+
+  this.addSharedInboxEndpoint = async (uri) => {
+    await this.setToken()
     try {
-      const result = await this.client.mutate({
-        mutation: gql`
-            mutation {
-                CreateSharedInboxEndpoint(uri: "${uri}")
+      let result = await this.client.query({
+        query: gql`
+          query {
+            SharedInboxEndpoint(uri: "${uri}") {
+              id
             }
+          }
         `
       })
       throwErrorIfApolloErrorOccurred(result)
+      if (result.data.SharedInboxEndpoint.length === 0) {
+        result = await this.client.mutate({
+          mutation: gql`
+            mutation {
+              CreateSharedInboxEndpoint(uri: "${uri}") {
+                id
+              }
+            }
+          `
+        })
+        throwErrorIfApolloErrorOccurred(result)
+      }
       return true
     } catch (e) {
       return false
     }
   }
 
-  async createComment (activity) {
+  this.createComment = async (activity) => {
+    const toUserId = await ensureUser(activity.actor)
+    await this.setToken(activity.actor)
     const postObject = activity.object
     let result = await this.client.mutate({
       mutation: gql`
@@ -481,8 +518,7 @@ export default class NitroDataSource {
     })
     throwErrorIfApolloErrorOccurred(result)
 
-    const toUserId = await this.ensureUser(activity.actor)
-    const result2 = await this.client.mutate({
+    result = await this.client.mutate({
       mutation: gql`
           mutation {
               AddCommentAuthor(from: {id: "${result.data.CreateComment.id}"}, to: {id: "${toUserId}"}) {
@@ -491,7 +527,7 @@ export default class NitroDataSource {
           }
       `
     })
-    throwErrorIfApolloErrorOccurred(result2)
+    throwErrorIfApolloErrorOccurred(result)
 
     const postId = extractIdFromActivityId(postObject.inReplyTo)
     result = await this.client.mutate({
@@ -507,46 +543,123 @@ export default class NitroDataSource {
     throwErrorIfApolloErrorOccurred(result)
   }
 
+  this.getActorId = async (name) => {
+    await this.setToken()
+    const result = await this.client.query({
+      query: gql`
+          query {
+              User(slug: "${name}") {
+                  actorId
+              }
+          }
+      `
+    })
+    throwErrorIfApolloErrorOccurred(result)
+    if (Array.isArray(result.data.User) && result.data.User[0]) {
+      return result.data.User[0].actorId
+    } else {
+      return Promise.reject(Error(`No user with name: ${name}`))
+    }
+  }
+
+  this.getPublicKey = async (name) => {
+    await this.setToken()
+    const result = await this.client.query({
+      query: gql`
+          query {
+              User(slug: "${name}") {
+                  publicKey
+              }
+          }
+      `
+    })
+    throwErrorIfApolloErrorOccurred(result)
+    if (result.data.User.length > 0) {
+      return result.data.User[0].publicKey
+    } else {
+      return Promise.reject(Error(`No user with name: ${name}`))
+    }
+  }
+
+  this.getEncryptedPrivateKey = async (name) => {
+    const session = driver.session()
+    const result = await session.run('MATCH (u:User) WHERE u.slug = { slug } RETURN u.privateKey',
+      { slug: name }).catch(() => { session.close() })
+    session.close()
+    if (result.records.length === 0) {
+      return Promise.reject(Error(`No user with slug: ${name}`))
+    } else {
+      return result.records[0].get('u.privateKey')
+    }
+  }
+
+  this.userExists = async (name) => {
+    await this.setToken()
+    const result = await this.client.query({
+      query: gql`
+          query {
+              User(slug: "${name}") {
+                  slug
+              }
+          }
+      `
+    })
+
+    if (result.data.User.length > 0) {
+      return true
+    } else {
+      return false
+    }
+  }
+
   /**
    * This function will search for user existence and will create a disabled user with a random 16 bytes password when no user is found.
    *
    * @param actorId
    * @returns {Promise<*>}
    */
-  async ensureUser (actorId) {
+  async function ensureUser (actorId) {
     debug(`inside ensureUser = ${actorId}`)
+    const session = driver.session()
     const name = extractNameFromId(actorId)
-    const queryResult = await this.client.query({
-      query: gql`
-          query {
-              User(slug: "${name}") {
-                  id
-              }
-          }
-      `
-    })
+    const uniqueSlug = (actorId, name) => {
+      const { hostname } = new URL(actorId)
+      const localHostname = new URL(uri).hostname
 
-    if (queryResult.data && Array.isArray(queryResult.data.User) && queryResult.data.User.length > 0) {
+      if (localHostname === hostname) {
+        // Request from same instance
+        return name
+      } else {
+        // Request form somewhere else
+        return `${hostname}-${name}`
+      }
+    }
+    let result = await session.run('MATCH (u:User) WHERE u.slug = { slug } RETURN u.id',
+      { slug: uniqueSlug(actorId, name) }).catch(() => { session.close() })
+
+    if (result.records.length > 0) {
       debug('ensureUser: user exists.. return id')
+      session.close()
       // user already exists.. return the id
-      return queryResult.data.User[0].id
+      return result.records[0].get('u.id')
     } else {
       debug('ensureUser: user not exists.. createUser')
       // user does not exist.. create it
-      const pw = crypto.randomBytes(16).toString('hex')
-      const slug = name.toLowerCase().split(' ').join('-')
-      const result = await this.client.mutate({
-        mutation: gql`
-            mutation {
-                CreateUser(password: "${pw}", slug:"${slug}", actorId: "${actorId}", name: "${name}", email: "${slug}@test.org") {
-                    id
-                }
-            }
-        `
+      const slug = uniqueSlug(actorId, name)
+      result = await session.run('CREATE (u:User {slug: { slug }, id: { id }, name: { name }, ' +
+        'actorId: { actorId }})' +
+        ' RETURN u', {
+        slug: slug, id: uuid(), name: name, actorId: actorId
       })
-      throwErrorIfApolloErrorOccurred(result)
-
-      return result.data.CreateUser.id
+        .catch(() => {
+          session.close()
+          return Promise.reject(Error('Error creating a user'))
+        })
     }
+
+    session.close()
+    return result.records[0].get('u').properties.id
   }
+
+  return this
 }
