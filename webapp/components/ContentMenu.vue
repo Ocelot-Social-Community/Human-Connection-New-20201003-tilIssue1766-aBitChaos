@@ -3,7 +3,7 @@
     <template slot="default" slot-scope="{ toggleMenu }">
       <slot name="button" :toggleMenu="toggleMenu">
         <ds-button class="content-menu-trigger" size="small" ghost @click.prevent="toggleMenu">
-          <ds-icon name="ellipsis-v" />
+          <ds-icon name="ellipsis-v"/>
         </ds-button>
       </slot>
     </template>
@@ -16,7 +16,7 @@
           :parents="item.parents"
           @click.stop.prevent="openItem(item.route, toggleMenu)"
         >
-          <ds-icon :name="item.route.icon" />
+          <ds-icon :name="item.route.icon"/>
           {{ item.route.name }}
         </ds-menu-item>
       </ds-menu>
@@ -70,14 +70,15 @@ export default {
       }
 
       if (this.isOwner && this.resourceType === 'comment') {
-        // routes.push({
-        //   name: this.$t(`comment.menu.edit`),
-        //   callback: () => {
-        //     /* eslint-disable-next-line no-console */
-        //     console.log('EDIT COMMENT')
-        //   },
-        //   icon: 'edit'
-        // })
+        routes.push({
+          name: this.$t(`comment.menu.edit`),
+          callback: () => {
+            /* eslint-disable-next-line no-console */
+            console.log('EDIT COMMENT')
+            this.$emit('showEditCommentMenu', true)
+          },
+          icon: 'edit',
+        })
         routes.push({
           name: this.$t(`comment.menu.delete`),
           callback: () => {
