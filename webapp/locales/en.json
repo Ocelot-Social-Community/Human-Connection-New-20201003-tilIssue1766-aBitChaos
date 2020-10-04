@@ -16,6 +16,7 @@
     "following": "Following",
     "shouted": "Shouted",
     "commented": "Commented",
+    "userAnonym": "Anonymous",
     "socialMedia": "Where else can I find"
   },
   "notifications": {
@@ -33,8 +34,10 @@
     "data": {
       "name": "Your data",
       "labelName": "Your Name",
+      "namePlaceholder": "Femanon Funny",
       "labelCity": "Your City or Region",
-      "labelBio": "About You"
+      "labelBio": "About You",
+      "success": "Your data was successfully updated!"
     },
     "security": {
       "name": "Security",
@@ -199,6 +202,7 @@
     "edit": "Edit Contribution",
     "delete": "Delete Contribution"
   },
+ 
   "comment": {
     "edit": "Edit Comment",
     "delete": "Delete Comment",
@@ -212,5 +216,26 @@
   },
   "shoutButton": {
     "shouted": "shouted"
+  },
+  
+  "release": {
+    "submit": "Release",
+    "cancel": "Cancel",
+    "success": "Release successfully",
+    "user": {
+      "title": "Release User",
+      "type": "User",
+      "message": "Do you really want to release the user \"<b>{name}</b>\"?"
+    },
+    "contribution": {
+      "title": "Release Contribution",
+      "type": "Contribution",
+      "message": "Do you really want to release the contribution \"<b>{name}</b>\"?"
+    },
+    "comment": {
+      "title": "Release Comment",
+      "type": "Comment",
+      "message": "Do you really want to release the comment from \"<b>{name}</b>\"?"
+    }
   }
 }

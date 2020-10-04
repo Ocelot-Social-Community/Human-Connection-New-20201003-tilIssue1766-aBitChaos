@@ -12,7 +12,7 @@
       <b
         class="username"
         style="vertical-align: middle;"
-      >Anonymus</b>
+      >{{ $t('profile.userAnonym') }}</b>
     </div>
   </div>
   <dropdown
@@ -38,7 +38,7 @@
           >
             <ds-avatar
               :image="user.avatar"
-              :name="user.name"
+              :name="userName(user.name)"
               style="display: inline-block; vertical-align: middle;"
               size="32px"
             />
@@ -47,7 +47,7 @@
             <b
               class="username"
               style="vertical-align: middle;"
-            >{{ user.name | truncate(trunc, 18) }}</b>
+            >{{ userName(user.name) | truncate(18) }}</b>
           </div>
           <!-- Time -->
           <div
@@ -141,9 +141,10 @@
 import { mapGetters } from 'vuex'
 
 import HcRelativeDateTime from '~/components/RelativeDateTime'
-import HcFollowButton from '~/components/FollowButton.vue'
-import HcBadges from '~/components/Badges.vue'
+import HcFollowButton from '~/components/FollowButton'
+import HcBadges from '~/components/Badges'
 import Dropdown from '~/components/Dropdown'
+import userName from '~/mixins/userName'
 
 export default {
   name: 'HcUser',
@@ -153,6 +154,7 @@ export default {
     HcBadges,
     Dropdown
   },
+  mixins: [userName],
   props: {
     user: { type: Object, default: null },
     trunc: { type: Number, default: null },
