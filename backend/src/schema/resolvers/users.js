@@ -89,12 +89,15 @@ export default {
     },
     UpdateUser: async (object, args, context, resolveInfo) => {
       const { termsAndConditionsAgreedVersion } = args
+
       if (termsAndConditionsAgreedVersion) {
         const regEx = new RegExp(/^[0-9]+\.[0-9]+\.[0-9]+$/g)
         if (!regEx.test(termsAndConditionsAgreedVersion)) {
           throw new ForbiddenError('Invalid version format!')
         }
+        args.termsAndConditionsAgreedAt = new Date().toISOString()
       }
+
       args = await fileUpload(args, { file: 'avatarUpload', url: 'avatar' })
       try {
         const user = await instance.find('User', args.id)
@@ -165,7 +168,6 @@ export default {
     },
     ...Resolver('User', {
       undefinedToNull: [
-        'termsAndConditionsAgreedVersion',
         'actorId',
         'avatar',
         'coverImg',
@@ -174,7 +176,7 @@ export default {
         'locationName',
         'about',
         'termsAndConditionsAgreedVersion',
-        // TODO: 'termsAndConditionsAgreedAt',
+        'termsAndConditionsAgreedAt',
       ],
       boolean: {
         followedByCurrentUser:

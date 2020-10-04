@@ -5,7 +5,7 @@ import slugify from 'slug'
 
 export default function create() {
   return {
-    factory: async ({ args, neodeInstance, factoryInstance }) => {
+    factory: async ({ args, neodeInstance }) => {
       const defaults = {
         id: uuid(),
         name: faker.name.findName(),
@@ -14,8 +14,8 @@ export default function create() {
         role: 'user',
         avatar: faker.internet.avatar(),
         about: faker.lorem.paragraph(),
-        // termsAndConditionsAgreedAt: new Date().toISOString(),
         termsAndConditionsAgreedVersion: '0.0.1',
+        termsAndConditionsAgreedAt: '2019-08-01T10:47:19.212Z',
       }
       defaults.slug = slugify(defaults.name, { lower: true })
       args = {
@@ -24,7 +24,7 @@ export default function create() {
       }
       args = await encryptPassword(args)
       const user = await neodeInstance.create('User', args)
-      const email = await factoryInstance.create('EmailAddress', { email: args.email })
+      const email = await neodeInstance.create('EmailAddress', { email: args.email })
       await user.relateTo(email, 'primaryEmail')
       await email.relateTo(user, 'belongsTo')
       return user
