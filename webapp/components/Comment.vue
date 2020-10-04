@@ -13,26 +13,29 @@
     <ds-card :id="`commentId-${comment.id}`">
       <ds-space margin-bottom="small">
         <hc-user :user="author" :date-time="comment.createdAt" />
+        <!-- Content Menu (can open Modals) -->
+        <client-only>
+          <content-menu
+            v-show="!openEditCommentMenu"
+            placement="bottom-end"
+            resource-type="comment"
+            :resource="comment"
+            :modalsData="menuModalsData"
+            style="float-right"
+            :is-owner="isAuthor(author.id)"
+            @showEditCommentMenu="editCommentMenu"
+          />
+        </client-only>
       </ds-space>
-      <!-- Content Menu (can open Modals) -->
-      <client-only>
-        <content-menu
-          placement="bottom-end"
-          resource-type="comment"
-          :resource="comment"
-          :modalsData="menuModalsData"
-          style="float-right"
-          :is-owner="isAuthor(author.id)"
-          @showEditCommentMenu="editCommentMenu"
-        />
-      </client-only>
 
       <ds-space margin-bottom="small" />
       <div v-if="openEditCommentMenu">
-        <hc-edit-comment-form
-          :comment="comment"
+        <hc-comment-form
+          :update="true"
           :post="post"
+          :comment="comment"
           @showEditCommentMenu="editCommentMenu"
+          @updateComment="updateComment"
         />
       </div>
       <div v-show="!openEditCommentMenu">
@@ -62,7 +65,7 @@ import { mapGetters } from 'vuex'
 import HcUser from '~/components/User/User'
 import ContentMenu from '~/components/ContentMenu'
 import ContentViewer from '~/components/Editor/ContentViewer'
-import HcEditCommentForm from '~/components/EditCommentForm/EditCommentForm'
+import HcCommentForm from '~/components/CommentForm/CommentForm'
 import CommentMutations from '~/graphql/CommentMutations'
 
 export default {
@@ -76,7 +79,7 @@ export default {
     HcUser,
     ContentMenu,
     ContentViewer,
-    HcEditCommentForm,
+    HcCommentForm,
   },
   props: {
     post: { type: Object, default: () => {} },
@@ -131,6 +134,9 @@ export default {
     },
     editCommentMenu(showMenu) {
       this.openEditCommentMenu = showMenu
+    },
+    updateComment(comment) {
+      this.$emit('updateComment', comment)
     },
     async deleteCommentCallback() {
       try {
