@@ -61,7 +61,9 @@ export default {
       form: {
         content: ''
       },
-      users: []
+      users: [],
+      handleSubmitDebounced: null,
+      millisecFirstSubmit: null
     }
   },
   methods: {
@@ -78,6 +80,17 @@ export default {
       this.$refs.editor.clear()
     },
     handleSubmit() {
+      if (this.millisecFirstSubmit === null) {
+        this.millisecFirstSubmit = Date.now()
+        this.handleSubmitWithoutDebounce()
+      } else {
+        if (500 < Date.now() - this.millisecFirstSubmit) {
+          this.millisecFirstSubmit = Date.now()
+          this.handleSubmitWithoutDebounce()
+        }
+      }
+    },
+    handleSubmitWithoutDebounce() {
       this.loading = true
       this.disabled = true
       this.$apollo
@@ -95,7 +108,7 @@ export default {
             content: this.form.content
           }
         })
-        .then(res => {
+        .then(() => {
           this.loading = false
           this.$root.$emit('refetchPostComments')
           this.clear()
