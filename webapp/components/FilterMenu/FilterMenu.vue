@@ -4,16 +4,16 @@
       <ds-flex-item class="filter-menu-title">
         <ds-heading size="h3">{{ $t('filter-menu.title') }}</ds-heading>
       </ds-flex-item>
+
       <ds-flex-item>
         <div class="filter-menu-buttons">
           <ds-button
             v-tooltip="{
               content: this.$t('contribution.filterFollow'),
-              placement: 'left',
               delay: { show: 500 },
             }"
             name="filter-by-followed-authors-only"
-            icon="user-plus"
+            icon="filter"
             :primary="!!filterAuthorIsFollowedById"
             @click="toggleOnlyFollowed"
           />
