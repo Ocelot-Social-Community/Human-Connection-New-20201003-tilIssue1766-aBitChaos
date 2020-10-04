@@ -6,17 +6,17 @@ export default function() {
       embed(url: $url) {
         type
         title
+        description
         author
         publisher
-        date
-        description
         url
+        date
         image
         audio
         video
         lang
+        logo
         sources
-        html
       }
     }
   `

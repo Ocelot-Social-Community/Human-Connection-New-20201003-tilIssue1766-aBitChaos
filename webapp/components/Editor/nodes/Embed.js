@@ -1,15 +1,22 @@
 import { Node } from 'tiptap'
-import pasteRule from '../commands/pasteRule'
+import Vue from 'vue'
 import { compileToFunctions } from 'vue-template-compiler'
+import pasteRule from '../commands/pasteRule'
+import VideoEmbed from '~/components/Embeds/VideoEmbed'
+import ImageEmbed from '~/components/Embeds/ImageEmbed'
+import LinkEmbed from '~/components/Embeds/LinkEmbed'
+import DefaultEmbed from '~/components/Embeds/DefaultEmbed'
 
+Vue.component(VideoEmbed)
+Vue.component(ImageEmbed)
+Vue.component(LinkEmbed)
+Vue.component(DefaultEmbed)
 const template = `
-  <a class="embed" :href="dataEmbedUrl" rel="noopener noreferrer nofollow" target="_blank">
-    <div v-if="embedHtml" v-html="embedHtml" />
-    <em> {{ dataEmbedUrl }} </em>
-  </a>
+  <div class="embed">
+    <component :url="dataEmbedUrl" :embedData="embedData" :is="componentType"/>
+  </div>
 `
 const compiledTemplate = compileToFunctions(template)
-
 export default class Embed extends Node {
   get name() {
     return 'embed'
@@ -71,6 +78,21 @@ export default class Embed extends Node {
         this.embedData = await this.options.onEmbed({ url: this.dataEmbedUrl })
       },
       computed: {
+        componentType() {
+          if (this.embedData && this.embedData.type === 'photo') {
+            return ImageEmbed
+          }
+          if (this.embedData && this.embedData.type === 'video') {
+            return VideoEmbed
+          }
+          if (
+            (this.embedData && this.embedData.type === 'link') ||
+            (this.embedData.publisher && this.embedData.url)
+          ) {
+            return LinkEmbed
+          }
+          return DefaultEmbed
+        },
         embedClass() {
           return this.embedHtml ? 'embed' : ''
         },
