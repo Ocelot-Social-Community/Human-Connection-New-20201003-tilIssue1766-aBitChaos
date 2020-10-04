@@ -294,5 +294,9 @@
     "avatar": {
       "submitted": "Upload successful"
     }
+  },
+  "contribution": {
+    "success": "Saved!",
+    "languageSelectLabel": "Language"
   }
 }
