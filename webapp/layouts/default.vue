@@ -20,7 +20,7 @@
               :width="{ base: '85%', sm: '85%', md: '50%', lg: '50%' }"
               :class="{ 'hide-mobile-menu': !toggleMobileMenu }"
             >
-              <div id="nav-search-box">
+              <div id="nav-search-box" v-if="isLoggedIn">
                 <search-input
                   id="nav-search"
                   :delay="300"
@@ -33,6 +33,7 @@
               </div>
             </ds-flex-item>
             <ds-flex-item
+              v-if="isLoggedIn"
               :width="{ base: '15%', sm: '15%', md: '10%', lg: '10%' }"
               :class="{ 'hide-mobile-menu': !toggleMobileMenu }"
             >
@@ -56,6 +57,13 @@
                 <no-ssr>
                   <locale-switch class="topbar-locale-switch" placement="top" offset="8" />
                 </no-ssr>
+                <template v-if="!isLoggedIn">
+                  <div class="avatar-menu-popover" style="margin-left:20px">
+                    <nuxt-link class="login-link" :to="{ name: 'login' }">
+                      {{ $t('login.login') }}
+                    </nuxt-link>
+                  </div>
+                </template>
                 <template v-if="isLoggedIn">
                   <no-ssr>
                     <notification-menu placement="top" />
@@ -125,9 +133,9 @@
       &nbsp;-&nbsp;
       <nuxt-link to="/imprint">{{ $t('site.imprint') }}</nuxt-link>
       &nbsp;‑&nbsp;
-      <nuxt-link to="/terms-and-conditions">{{ $t('site.termsAc') }}</nuxt-link>
+      <nuxt-link to="/terms-and-conditions">{{ $t('site.termsAndConditions') }}</nuxt-link>
       &nbsp;‑&nbsp;
-      <nuxt-link to="/privacy">{{ $t('site.privacy') }}</nuxt-link>
+      <nuxt-link to="/data-privacy">{{ $t('site.data-privacy') }}</nuxt-link>
       &nbsp;‑&nbsp;
       <nuxt-link to="/changelog">{{ $t('site.changelog') }}</nuxt-link>
     </div>
